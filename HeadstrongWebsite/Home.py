@@ -3,10 +3,18 @@ import urllib.request
 import json
 from datetime import datetime
 from glob import glob
-from flask import Flask, render_template
+from flask import Flask, render_template, send_file
 from MarkdownToHTML import MarkdownToHTML
 app = Flask(__name__)
 year = datetime.now().year
+passthrough_media_types=[
+   ".svg",
+   ".gif",
+   ".png",
+   ".jpg",
+   ".jpeg",
+   ".txt"
+]
 def get_default_path():
    dir_path = path.dirname(path.realpath(__file__))
    return path.join(dir_path, 'markdown')
@@ -25,8 +33,6 @@ def contact():
 @app.route('/privacy')
 def privacy():
       return render_template('privacy.html', year = year, sections = get_main_sections())
-
-
 
 @app.route('/pages/')
 def markdown_page_overloaded_page():
@@ -78,10 +84,14 @@ def markdown_page(foldername, subfoldername, filename):
       markdown_path += f"{foldername}/{subfoldername}/{filename}"
       full_markdownpath += f"/{foldername}/{subfoldername}/{filename}"
 
-   markdownToHTML = MarkdownToHTML(default_path = full_filepath)
    full_markdownpath = full_markdownpath.replace(".md","")
+   # return media request with file asap
+   if any(ext in full_markdownpath for ext in passthrough_media_types):
+      if path.exists(full_markdownpath):
+         return send_file(full_markdownpath)
+   markdownToHTML = MarkdownToHTML(default_path = full_filepath)
 
-   file_exists = path.exists(f"{full_markdownpath.replace}.md")   
+   file_exists = path.exists(f"{full_markdownpath}.md")   
    if file_exists:
       markdownToHTML.set_markdown_filepath(f"{full_markdownpath}.md")
       markdownToHTML.convert_markdown_file()

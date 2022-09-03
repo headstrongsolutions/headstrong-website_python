@@ -16,4 +16,10 @@ _italics_
 * [x] todo item 2
 * [ ] todo item 3
 
+remote image
+
 ![test image](/static/test-image.png)
+
+local image
+
+![test image](test-image.png)
