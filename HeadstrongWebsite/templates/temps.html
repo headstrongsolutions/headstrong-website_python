@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<div id="latesttemp"></div>
+<div id="lowesttemp"></div>
+<hr />
+<div id="curve_chart-temperature" style="width: 100%; height: 500px"></div>
+<script>
+	// LOAD DATA	
+	var last7DaysCollection;
+	$.getJSON("http://localhost:5000/api/get_temps", function(json){
+		last7DaysCollection = json;
+		drawGraphs();
+	});
+
+	function formatDateTime(datetimeString){
+		datetimeString.replace("T1","|");
+		return moment(datetimeString, "YYYY-MM-DD|HH:mm:SS").toDate();
+	}
+
+	function nullCheckValue(value){
+		if (value == null){
+			return "";
+		}
+		else {
+			return parseFloat(value);
+		}
+	}
+
+	function generateTemperature(data){
+		var returnSet = new Array();
+		returnSet.push(['Timestamp', 'Temperature']);
+		var counter = 0;
+		$(last7DaysCollection).each(function(index, value){
+			if(value.RecordTypeName ==="Temperature"){
+				returnSet.push([formatDateTime(value.RecordTimestamp), nullCheckValue(value.Value)]);
+			}
+		});
+		return returnSet
+	}
+
+	function getLowestTemperature(){
+		// Declare an empty Object
+		var temperatureSet = [];
+
+		for (i = 0; i < 1440; i++) { 
+			if(!isNaN(last7DaysCollection[i].Value)){
+				dateAndTemp = [];
+				dateAndTemp.push(last7DaysCollection[i].RecordTimestamp);
+				dateAndTemp.push(last7DaysCollection[i].Value);
+				temperatureSet.push(dateAndTemp);
+			}
+		}
+
+		temperatureSet.sort(function (element_a, element_b) {
+			return element_a[1] - element_b[1];
+		});
+		return temperatureSet[0]
+	}
+
+	function drawGraphs(){
+		if(last7DaysCollection.length >0){
+			var temperatureHouse = new Array();
+			temperatureHouse = generateTemperature(last7DaysCollection); 
+			var latesttemp = "<h2>" + 
+							 last7DaysCollection[0].Value + 
+							 "<sup>o</sup>C " + 
+							 "<span title=\"" +
+							 last7DaysCollection[0].RecordTimestamp +
+							 "\"><span style=\"font-weight:normal; text-size:4pt\">" + 
+							 moment(last7DaysCollection[0].RecordTimestamp).fromNow() +
+							 "</span></span></h2>";
+			$("#latesttemp").html(latesttemp);
+			var lowestTemp = getLowestTemperature();
+			var lowestTempHtml = "<div><b>Lowest Temperature</b><br />" + 
+								 lowestTemp[1] + 
+								 "<sup>o</sup>C " +
+								 "<span title=\"" +
+								 lowestTemp[0] + 
+								 "\">" +
+								 moment(lowestTemp[0]).fromNow() + 
+								 "</span></div></b>";
+			$("#lowesttemp").html(lowestTempHtml);
+
+			// GENERATE CHART
+			google.charts.load('current', {'packages':['corechart']});
+			google.charts.setOnLoadCallback(drawChart);
+
+			function drawChart() {
+				var houseTemperatureData = google.visualization.arrayToDataTable(temperatureHouse);
+				var temperatureOptions = {
+				explorer:{axis:'horizontal'},
+				hAxis:{
+					viewWindowMode:'maximized'
+				},
+				tooltip: {isHtml: true},
+				title: 'Temperature',
+				curveType: 'function',
+				legend: { position: 'bottom' }
+				};
+
+				var chartTemperatureHouse = new google.visualization.LineChart(document.getElementById('curve_chart-temperature'));
+				chartTemperatureHouse.draw(houseTemperatureData, temperatureOptions);
+			}
+		}  
+		else{
+			var returnMessage = "<p><b style=\"color:red;\">Data returned from server is empty (no lines in the last 7 days?)</b></p>";
+			$(".panel").html(returnMessage)
+		}	
+	}
+    </script>
+    </div>
+
+    <div class="panel">	
+    </div>
+    <div class="errorMessage">	
+    </div>
+{% endblock %}

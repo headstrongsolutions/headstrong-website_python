@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="100" width="100" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 26.458333 26.458334">
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g transform="translate(0 -270.54)">
+  <g transform="matrix(.26458 0 0 .26458 -3.3638 271.78)">
+   <polygon points="79 75.6 102 38.7 73.9 9.5 27.9 11.4 27.6 54.4 46 82.8" fill="#fff" class="st0"/>
+   <path fill="#fbb03b" class="st1" d="m73.9 9.5 28 29.2l-22.9 36.9-33 7.2-18.4-28.4 0.3-43 46-1.9m0-7h-0.3l-46 1.9c-3.7 0.1-6.7 3.2-6.7 6.9l-0.3 43c0 1.4 0.4 2.7 1.1 3.9l18.4 28.4c1.3 2 3.5 3.2 5.9 3.2 0.5 0 1-0.1 1.5-0.2l33-7.2c1.8-0.4 3.5-1.5 4.4-3.1l22.9-36.9c1.7-2.7 1.3-6.2-0.9-8.5l-27.9-29.2c-1.3-1.4-3.2-2.2-5.1-2.2z"/>
+  </g>
+ </g>
+</svg>

@@ -1,0 +1,33 @@
+.navbar-brand {
+    font-size:2.5em;
+    color:white;
+}
+
+.navbar-brand:hover, .nav-link, .nav-link:hover {
+    color:white;
+}
+
+.navbar-brand img {
+    width: 50px;
+    margin-right:25px
+}
+
+.navbar-nav {
+    margin-left:auto;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(200,200,200, 0.5)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 8h24M4 16h24M4 24h24'/%3E%3C/svg%3E");
+}
+
+.navbar-toggler {
+    border-color: rgb(200,200,200);
+} 
+
+.container {
+    margin-top:25px
+}
+
+footer span {
+    margin-left:25px;
+}
