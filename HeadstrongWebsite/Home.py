@@ -1,4 +1,3 @@
-
 from os import path, chdir, walk, getenv
 import urllib.request
 import json
@@ -82,22 +81,22 @@ def markdown_page_overloaded_mediafilename(foldername, subfoldername, filename):
       mediafilename=mediafilename)
 
 def markdown_filelist(page_name):
-   markdown_output = f"# {page_name}\n"
+   markdown_output = f"# {page_name}\n"                                                            # TODO - should be provided by create helper function
    markdown_filenames = []
-   path_exists = path.exists(full_markdown_path)
+   path_exists = path.exists(full_markdown_path)                                                   # TODO - is this needed?
    if path_exists:
       # is there an index.md file in this dir?
-      index_exists = path.exists(f"{full_markdown_path}/index.md")
+      index_exists = path.exists(f"{full_markdown_path}/index.md")                                 # TODO - there's a lot of '.md' crap going on.
       if index_exists:
       # if not generate a list of the md files in this folder to act as an index page
-         markdownToHTML.set_markdown_filepath(f"{full_markdown_path}/index.md")
+         markdownToHTML.set_markdown_filepath(f"{full_markdown_path}/index.md")                    # TODO - there's a lot of '.md' crap going on.
          markdownToHTML.convert_markdown_file()
       else:
-         for markdown_file in glob(f"{full_markdown_path}/*.md"):
+         for markdown_file in glob(f"{full_markdown_path}/*.md"):                                  # TODO - there's a lot of '.md' crap going on.
             markdown_name = markdown_file.replace(full_markdown_path, "")
-            markdown_name = markdown_name.replace(".md","")
-            markdown_name = markdown_name.strip("/")
-            markdown_filenames.append(f" - [{markdown_name}]({markdown_path}/{markdown_name})")
+            markdown_name = markdown_name.replace(".md","")                                        # TODO - there's a lot of '.md' crap going on.
+            markdown_name = markdown_name.strip("/")                                               # TODO - this should already be normalised in create helper function
+            markdown_filenames.append(f" - [{markdown_name}]({markdown_path}/{markdown_name})")    # TODO - should be provided by create helper function
          markdown_output += "".join(markdown_filenames)
    return markdown_output
 
@@ -105,7 +104,8 @@ def create_filepath_routes(foldername, subfoldername, filename, mediafilename):
    full_filepath = get_default_path()
    markdown_path = "/pages/"
    full_markdown_path = full_filepath
-
+   # TODO - this is a nightmare to follow and inherently flawed, too much replication
+   #      - make it bitwise or elvis operated or something, just..... not this
    if foldername and not subfoldername and not filename and not mediafilename:
       markdown_path += f"{foldername}"
       full_markdown_path += f"/{foldername}"
@@ -121,7 +121,9 @@ def create_filepath_routes(foldername, subfoldername, filename, mediafilename):
       full_filepath += f"/{foldername}/{subfoldername}/{filename}"
       markdown_path += f"{foldername}/{subfoldername}/{filename}/{mediafilename}"
       full_markdown_path += f"/{foldername}/{subfoldername}/{filename}/{mediafilename}"
-   
+   # TODO - by the time we leave here we whould know where we are (file and dir)
+   # TODO - also, can we get a nice breakdown of what is actually needed? 
+   #      - feel like we should return just 'my dir is' and 'I am'
    return (full_filepath, markdown_path, full_markdown_path)
 
 @app.route('/pages/<foldername>/<subfoldername>/<filename>/<mediafilename>')
