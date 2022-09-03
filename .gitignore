@@ -161,3 +161,6 @@ cython_debug/
 
 # Added launch.json as this contains environmental detail now
 .vscode/launch.json
+
+# hiding contents in HeadstrongWebsite/markdown
+HeadstrongWebsite/markdown
