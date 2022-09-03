@@ -79,8 +79,9 @@ def markdown_page(foldername, subfoldername, filename):
       full_markdownpath += f"/{foldername}/{subfoldername}/{filename}"
 
    markdownToHTML = MarkdownToHTML(default_path = full_filepath)
-   
-   file_exists = path.exists(f"{full_markdownpath}.md")   
+   full_markdownpath = full_markdownpath.replace(".md","")
+
+   file_exists = path.exists(f"{full_markdownpath.replace}.md")   
    if file_exists:
       markdownToHTML.set_markdown_filepath(f"{full_markdownpath}.md")
       markdownToHTML.convert_markdown_file()
