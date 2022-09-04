@@ -1,4 +1,4 @@
-from os import path, chdir, walk, getenv
+from os import path, chdir, walk, getenv, listdir
 from pathlib import Path
 import urllib.request
 import json
@@ -42,25 +42,37 @@ def get_url_portions(first: str, second: str, third: str, fourth: str) -> (str, 
 
       first/second/third/fourth: nullable strings containing url portions, e.g. "/Project/PeaWhistle/Images/top.jpg" 
       Returns (filename: str, full_path: str):
-               e.g.  "/Project/PeaWhistle/Images/top.jpg" -> ("top.jpg", "/Project/PeaWhistle/Images/")
-                     "/Photos/middle_earth5.jpg" -> ("middle_earth.jpg", "/Photos/")
+               e.g.  "/Project/PeaWhistle/Images/top.jpg" -> ("top.jpg", 
+                                                              "/Project/PeaWhistle/Images/", 
+                                                              "/Project/PeaWhistle/Images/top.jpg")
+                     "/Photos/middle_earth.jpg"           -> ("middle_earth.jpg",
+                                                              "/Photos/",
+                                                              "/Photos/middle_earth.jpg")
+                     "/First/Second/Third/"               -> ("Third",
+                                                              "/First/Second/",
+                                                              "/First/Second/Third/")
    """
-   filename     = ""
-   full_path    = ""
+   filename     = "/"
+   file_path    = ""
+   full_path    = "/"
    if first:
-      filename  =  "/" + first  + "/"
-      full_path =  f"/"
+      filename  =   first  + "/"
+      file_path =  f"/"
+      full_path +=  filename
    if second:
-      filename  =  "/" + second + "/"
-      full_path =  f"/{first}/"
+      filename  =  second + "/"
+      file_path =  f"/{first}/"
+      full_path +=  filename
    if third:
-      filename  =  "/" + third  + "/"
-      full_path =  f"/{first}/{second}/"
+      filename  =  third  + "/"
+      file_path =  f"/{first}/{second}/"
+      full_path +=  filename
    if fourth:
-      filename  =  "/" + fourth + "/"
-      full_path =  f"/{first}/{second}/{third}/"
+      filename  =  fourth + "/"
+      file_path =  f"/{first}/{second}/{third}/"
+      full_path +=  filename
 
-   return (filename.strip("/"), full_path)
+   return (filename.strip("/"), file_path, full_path)
 
 def render_markdown_file(path:str, filename: str)->str:
    """markdown_filelist(title:str, path:str, type:str)
@@ -74,31 +86,56 @@ def render_markdown_file(path:str, filename: str)->str:
    markdownToHTML.convert_markdown_file()
    return markdownToHTML.output
 
-def markdown_filelist(page_name:str, path:str, type:str):
+def render_markdown_raw(path:str, content: str)->str:
+   """render_markdown_raw(path:str, content:str, type:str)
+      Returns a HTML formatted string from markdown content
+
+      path: string containing a path to a directory of markdown files
+      content: string containing HTML content
+   """
+   markdownToHTML = MarkdownToHTML(path)
+   markdownToHTML.convert_markdown_raw(content)
+   return markdownToHTML.output
+
+def markdown_filelist(full_path:str, type:str):
    """markdown_filelist(title:str, path:str, type:str)
       Returns a markdown formatted page listing the contents of a directory
 
-      title: string containing text to displa yas the page title
-      path: string containing a path to a directory to list the contents of
-      type: string, (either 'media' or 'markdown') to select what filetypes to list
+      full_path: string containing a path to a directory to list the contents of
+      type: string, (either 'media' or 'markdown' or 'directory') to select what to list
    """
-   markdown_output = f"# {page_name}\n"
+   markdown_output = ""
    filenames = []
    if type == "markdown":
-      for markdown_file in glob(f"{path}/*{markdown_type}"):
-         markdown_name = markdown_file.replace(path, "")
-         markdown_name = markdown_name.replace({markdown_type},"")
-         filenames.append(f" - [{markdown_name}]({path}/{markdown_name})")
+      default_path = get_default_path()
+      markdown_files = glob(f"{default_path}{full_path}*{markdown_type}")
+      if len(markdown_files) > 0:
+         for markdown_file in markdown_files:
+            markdown_name = markdown_file.replace(f"{default_path}{full_path}", "")
+            filenames.append(f" - [{markdown_name}](/pages{full_path}{markdown_name})\n")
+      else:
+         filenames.append("No markdown files found\n")
       markdown_output += "".join(filenames)
    elif type == "media":
-      folder = Path(path)
-      patterns = passthrough_media_types
+      folder = Path(f"{get_default_path()}/{full_path}")
+      patterns = media_type_patterns
       media_files = [f for f in folder.iterdir() if any(f.match(p) for p in patterns)]
-      for media_file in media_files:
-         markdown_name = markdown_file.replace(path, "")
-         for media_type in media_types:
-            markdown_name = markdown_name.replace(media_type,"")
-         filenames.append(f" - [{markdown_name}]({markdown_path}/{markdown_name})")
+      if len(media_types) > 0:
+         for media_file in media_files:
+            for media_type in media_types:
+               if media_type == media_file.suffix:
+                  filenames.append(f" - [{media_file.name}](/pages{full_path}{media_file.name})\n")
+      else:
+         filenames.append("No media files found\n")
+      markdown_output += "".join(filenames)
+   elif type == "directory":
+      base_directory = Path(f"{get_default_path()}/{full_path}")
+      directories = listdir(base_directory)
+      for file in directories:
+         directory = path.join(base_directory, file)
+         if path.isdir(directory):
+            directory_name = directory.replace(str(base_directory),"")
+            filenames.append(f" - [{directory_name}/](/pages{full_path}{directory_name}/)\n")
       markdown_output += "".join(filenames)
    return markdown_output
 
@@ -129,10 +166,21 @@ def content_page_overloaded_second(first, second):
 def content_page_overloaded_third(first, second, third):
    return content_page(first=first, second=second, third=third, fourth=None)
 
-@app.route('/pages/<foldername>/<subfoldername>/<filename>/<mediafilename>/')
-def content_page(foldername, subfoldername, filename, mediafilename):
-   get_filename
-
+@app.route('/pages/<first>/<second>/<third>/<fourth>/')
+def content_page(first, second, third, fourth):
+   (directory_name, file_path, full_path) = get_url_portions(first, second, third, fourth)
+   content  = f"# {directory_name}\n"
+   if file_path != "/":
+      content += f"[up a level](/pages{file_path})\n"
+   content += "### Folders\n"
+   content += markdown_filelist(full_path, "directory")
+   content += "### Markdown Files\n"
+   content += markdown_filelist(full_path, "markdown")
+   content += "### Media Files\n"
+   content += markdown_filelist(full_path, "media")
+   markdownToHTML = MarkdownToHTML(full_path)
+   markdown = render_markdown_raw(full_path, content)
+   return render_template('markdown_page.html', markdown=markdown, year = year, sections = get_main_sections())
 
 # Markdown pages
 @app.route('/pages/<first>')
@@ -150,13 +198,13 @@ def markdown_page_overloaded_third(first, second, third):
 @app.route('/pages/<first>/<second>/<third>/<fourth>')
 def markdown_page(first, second, third, fourth):
    default_path = get_default_path()
-   (filename, full_path) = get_url_portions(first, second, third, fourth)
-   if path.exists(f"{default_path}{full_path}{filename}"):
+   (filename, file_path, full_path) = get_url_portions(first, second, third, fourth)
+   if path.exists(f"{default_path}{file_path}{filename}"):
       if any(media_type in filename for media_type in media_types):
-         return send_file(f"{default_path}{full_path}{filename}")
+         return send_file(f"{default_path}{file_path}{filename}")
       if markdown_type in filename:
          
-         markdown = render_markdown_file(f"{default_path}{full_path}", filename)
+         markdown = render_markdown_file(f"{default_path}{file_path}", filename)
          return render_template('markdown_page.html', markdown=markdown, year = year, sections = get_main_sections())
    else:
       abort(404)
