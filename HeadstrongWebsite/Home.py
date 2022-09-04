@@ -7,6 +7,7 @@ from glob import glob
 from flask import Flask, render_template, send_file, abort
 from MarkdownToHTML import MarkdownToHTML
 app = Flask(__name__)
+app.url_map.strict_slashes = False
 year = datetime.now().year
 
 markdown_type = ".md"
@@ -130,11 +131,11 @@ def markdown_filelist(full_path:str, type:str):
       markdown_output += "".join(filenames)
    elif type == "directory":
       base_directory = Path(f"{get_default_path()}/{full_path}")
-      directories = listdir(base_directory)
+      directories = listdir(base_directory)                       # BUG - this threw a directory not found in production when trying to open a .md file
       for file in directories:
          directory = path.join(base_directory, file)
          if path.isdir(directory):
-            directory_name = directory.replace(str(base_directory),"")
+            directory_name = directory.replace(str(base_directory),"").strip("/")
             filenames.append(f" - [{directory_name}/](/pages{full_path}{directory_name}/)\n")
       markdown_output += "".join(filenames)
    return markdown_output
