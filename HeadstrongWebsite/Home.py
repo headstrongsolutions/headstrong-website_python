@@ -1,13 +1,24 @@
 from os import path, chdir, walk, getenv
+from pathlib import Path
 import urllib.request
 import json
 from datetime import datetime
 from glob import glob
-from flask import Flask, render_template, send_file
+from flask import Flask, render_template, send_file, abort
 from MarkdownToHTML import MarkdownToHTML
 app = Flask(__name__)
 year = datetime.now().year
-passthrough_media_types=[
+
+markdown_type = ".md"
+media_type_patterns=(
+   "*.svg",
+   "*.gif",
+   "*.png",
+   "*.jpg",
+   "*.jpeg",
+   "*.txt"
+)
+media_types=[
    ".svg",
    ".gif",
    ".png",
@@ -15,6 +26,9 @@ passthrough_media_types=[
    ".jpeg",
    ".txt"
 ]
+
+# Helper functions
+
 def get_default_path():
    dir_path = path.dirname(path.realpath(__file__))
    return path.join(dir_path, 'markdown')
@@ -22,6 +36,73 @@ def get_default_path():
 def get_main_sections():
    return next(walk(get_default_path()))[1]
 
+def get_url_portions(first: str, second: str, third: str, fourth: str) -> (str, str):
+   """get_url_portions(first: str, second: str, third: str, fourth: str)
+      Returns a tuple containing the filename and the full url of the accumulated portions
+
+      first/second/third/fourth: nullable strings containing url portions, e.g. "/Project/PeaWhistle/Images/top.jpg" 
+      Returns (filename: str, full_path: str):
+               e.g.  "/Project/PeaWhistle/Images/top.jpg" -> ("top.jpg", "/Project/PeaWhistle/Images/")
+                     "/Photos/middle_earth5.jpg" -> ("middle_earth.jpg", "/Photos/")
+   """
+   filename     = ""
+   full_path    = ""
+   if first:
+      filename  =  "/" + first  + "/"
+      full_path =  f"/"
+   if second:
+      filename  =  "/" + second + "/"
+      full_path =  f"/{first}/"
+   if third:
+      filename  =  "/" + third  + "/"
+      full_path =  f"/{first}/{second}/"
+   if fourth:
+      filename  =  "/" + fourth + "/"
+      full_path =  f"/{first}/{second}/{third}/"
+
+   return (filename.strip("/"), full_path)
+
+def render_markdown_file(path:str, filename: str)->str:
+   """markdown_filelist(title:str, path:str, type:str)
+      Returns a markdown formatted page listing the contents of a directory
+
+      path: string containing a path to a directory of the markdown file
+      filename: string containing the filename of the markdown file
+   """
+   markdownToHTML = MarkdownToHTML(path)
+   markdownToHTML.set_markdown_filepath(f"{path}{filename}")
+   markdownToHTML.convert_markdown_file()
+   return markdownToHTML.output
+
+def markdown_filelist(page_name:str, path:str, type:str):
+   """markdown_filelist(title:str, path:str, type:str)
+      Returns a markdown formatted page listing the contents of a directory
+
+      title: string containing text to displa yas the page title
+      path: string containing a path to a directory to list the contents of
+      type: string, (either 'media' or 'markdown') to select what filetypes to list
+   """
+   markdown_output = f"# {page_name}\n"
+   filenames = []
+   if type == "markdown":
+      for markdown_file in glob(f"{path}/*{markdown_type}"):
+         markdown_name = markdown_file.replace(path, "")
+         markdown_name = markdown_name.replace({markdown_type},"")
+         filenames.append(f" - [{markdown_name}]({path}/{markdown_name})")
+      markdown_output += "".join(filenames)
+   elif type == "media":
+      folder = Path(path)
+      patterns = passthrough_media_types
+      media_files = [f for f in folder.iterdir() if any(f.match(p) for p in patterns)]
+      for media_file in media_files:
+         markdown_name = markdown_file.replace(path, "")
+         for media_type in media_types:
+            markdown_name = markdown_name.replace(media_type,"")
+         filenames.append(f" - [{markdown_name}]({markdown_path}/{markdown_name})")
+      markdown_output += "".join(filenames)
+   return markdown_output
+
+# Generic routes
 @app.route('/')
 def home():
    return render_template('index.html', year = year, sections = get_main_sections())
@@ -34,125 +115,55 @@ def contact():
 def privacy():
       return render_template('privacy.html', year = year, sections = get_main_sections())
 
-@app.route('/pages/')
-def markdown_page_overloaded_page():
-   foldername = None
-   subfoldername=None
-   filename=None
-   mediafilename=None
-   return markdown_page(
-      foldername=foldername,
-      subfoldername=subfoldername,
-      filename=filename,
-      mediafilename=mediafilename)
 
-@app.route('/pages/<foldername>')
-@app.route('/pages/<foldername>/')
-def markdown_page_overloaded_foldername(foldername):
-   subfoldername=None
-   filename=None
-   mediafilename=None
-   return markdown_page(
-      foldername=foldername,
-      subfoldername=subfoldername,
-      filename=filename,
-      mediafilename=mediafilename)
+# List content pages
+@app.route('/pages/<first>/')
+def content_page_overloaded_first(first):
+   return content_page(first=first, second=None, third=None, fourth=None)
 
-@app.route('/pages/<foldername>/<subfoldername>')
-@app.route('/pages/<foldername>/<subfoldername>/')
-def markdown_page_overloaded_subfoldername(foldername, subfoldername):
-   filename=None
-   mediafilename=None
-   return markdown_page(
-      foldername=foldername,
-      subfoldername=subfoldername,
-      filename=filename,
-      mediafilename=mediafilename)
+@app.route('/pages/<first>/<second>/')
+def content_page_overloaded_second(first, second):
+   return content_page(first=first, second=second, third=None, fourth=None)
 
-@app.route('/pages/<foldername>/<subfoldername>/<filename>')
-@app.route('/pages/<foldername>/<subfoldername>/<filename>/')
-def markdown_page_overloaded_mediafilename(foldername, subfoldername, filename):
-   mediafilename=None
+@app.route('/pages/<first>/<second>/<third>/')
+def content_page_overloaded_third(first, second, third):
+   return content_page(first=first, second=second, third=third, fourth=None)
 
-   return markdown_page(
-      foldername=foldername,
-      subfoldername=subfoldername,
-      filename=filename,
-      mediafilename=mediafilename)
-
-def markdown_filelist(page_name):
-   markdown_output = f"# {page_name}\n"                                                            # TODO - should be provided by create helper function
-   markdown_filenames = []
-   path_exists = path.exists(full_markdown_path)                                                   # TODO - is this needed?
-   if path_exists:
-      # is there an index.md file in this dir?
-      index_exists = path.exists(f"{full_markdown_path}/index.md")                                 # TODO - there's a lot of '.md' crap going on.
-      if index_exists:
-      # if not generate a list of the md files in this folder to act as an index page
-         markdownToHTML.set_markdown_filepath(f"{full_markdown_path}/index.md")                    # TODO - there's a lot of '.md' crap going on.
-         markdownToHTML.convert_markdown_file()
-      else:
-         for markdown_file in glob(f"{full_markdown_path}/*.md"):                                  # TODO - there's a lot of '.md' crap going on.
-            markdown_name = markdown_file.replace(full_markdown_path, "")
-            markdown_name = markdown_name.replace(".md","")                                        # TODO - there's a lot of '.md' crap going on.
-            markdown_name = markdown_name.strip("/")                                               # TODO - this should already be normalised in create helper function
-            markdown_filenames.append(f" - [{markdown_name}]({markdown_path}/{markdown_name})")    # TODO - should be provided by create helper function
-         markdown_output += "".join(markdown_filenames)
-   return markdown_output
-
-def create_filepath_routes(foldername, subfoldername, filename, mediafilename):
-   full_filepath = get_default_path()
-   markdown_path = "/pages/"
-   full_markdown_path = full_filepath
-   # TODO - this is a nightmare to follow and inherently flawed, too much replication
-   #      - make it bitwise or elvis operated or something, just..... not this
-   if foldername and not subfoldername and not filename and not mediafilename:
-      markdown_path += f"{foldername}"
-      full_markdown_path += f"/{foldername}"
-   elif foldername and subfoldername and not filename and not mediafilename:
-      full_filepath += f"/{foldername}"
-      markdown_path += f"{foldername}/{subfoldername}"
-      full_markdown_path += f"/{foldername}/{subfoldername}"
-   elif foldername and subfoldername and filename and not mediafilename:
-      full_filepath += f"/{foldername}/{subfoldername}"
-      markdown_path += f"{foldername}/{subfoldername}/{filename}"
-      full_markdown_path += f"/{foldername}/{subfoldername}/{filename}"
-   elif foldername and subfoldername and filename and mediafilename:
-      full_filepath += f"/{foldername}/{subfoldername}/{filename}"
-      markdown_path += f"{foldername}/{subfoldername}/{filename}/{mediafilename}"
-      full_markdown_path += f"/{foldername}/{subfoldername}/{filename}/{mediafilename}"
-   # TODO - by the time we leave here we whould know where we are (file and dir)
-   # TODO - also, can we get a nice breakdown of what is actually needed? 
-   #      - feel like we should return just 'my dir is' and 'I am'
-   return (full_filepath, markdown_path, full_markdown_path)
-
-@app.route('/pages/<foldername>/<subfoldername>/<filename>/<mediafilename>')
 @app.route('/pages/<foldername>/<subfoldername>/<filename>/<mediafilename>/')
-def markdown_page(foldername, subfoldername, filename, mediafilename):
+def content_page(foldername, subfoldername, filename, mediafilename):
+   get_filename
 
-   (full_filepath, markdown_path, full_markdown_path) = create_filepath_routes(foldername, subfoldername, filename, mediafilename)
 
-   full_markdown_path = full_markdown_path.replace(".md","")
-   # return media request with file asap
-   if any(ext in full_markdown_path for ext in passthrough_media_types):
-      if path.exists(full_markdown_path):
-         return send_file(full_markdown_path)
-   markdownToHTML = MarkdownToHTML(default_path = full_filepath)
+# Markdown pages
+@app.route('/pages/<first>')
+def markdown_page_overloaded_first(first):
+   return markdown_page(first=first, second=None, third=None, fourth=None)
 
-   file_exists = path.exists(f"{full_markdown_path}.md")   
-   if file_exists:
-      markdownToHTML.set_markdown_filepath(f"{full_markdown_path}.md")
-      markdownToHTML.convert_markdown_file()
+@app.route('/pages/<first>/<second>')
+def markdown_page_overloaded_second(first, second):
+   return markdown_page(first=first, second=second, third=None, fourth=None)
+
+@app.route('/pages/<first>/<second>/<third>')
+def markdown_page_overloaded_third(first, second, third):
+   return markdown_page(first=first, second=second, third=third, fourth=None)
+
+@app.route('/pages/<first>/<second>/<third>/<fourth>')
+def markdown_page(first, second, third, fourth):
+   default_path = get_default_path()
+   (filename, full_path) = get_url_portions(first, second, third, fourth)
+   if path.exists(f"{default_path}{full_path}{filename}"):
+      if any(media_type in filename for media_type in media_types):
+         return send_file(f"{default_path}{full_path}{filename}")
+      if markdown_type in filename:
+         
+         markdown = render_markdown_file(f"{default_path}{full_path}", filename)
+         return render_template('markdown_page.html', markdown=markdown, year = year, sections = get_main_sections())
    else:
-      markdown_output = markdown_filelist("Placeholder for page name")
-   markdown = markdownToHTML.output
-   return render_template('markdown_page.html', markdown=markdown, year = year, sections = get_main_sections())
-
+      abort(404)
 
 @app.route('/temps')
 def temps():
    return render_template('temps.html', year = year, sections = get_main_sections())
-
 
 @app.route('/api/get_temps')
 def api_gettemps():
