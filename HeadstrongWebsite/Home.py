@@ -72,7 +72,8 @@ def get_url_portions(first: str, second: str, third: str, fourth: str) -> (str, 
       filename  =  fourth + "/"
       file_path =  f"/{first}/{second}/{third}/"
       full_path +=  filename
-
+   if full_path.endswith(f"{markdown_type}/"):
+      full_path = full_path.replace(f"{markdown_type}/", f"{markdown_type}")
    return (filename.strip("/"), file_path, full_path)
 
 def render_markdown_file(path:str, filename: str)->str:
