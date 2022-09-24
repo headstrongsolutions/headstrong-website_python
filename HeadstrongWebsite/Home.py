@@ -38,8 +38,7 @@ def get_main_sections():
    return next(walk(get_default_path()))[1]
 
 def get_url_portions(first: str, second: str, third: str, fourth: str) -> (str, str):
-   """get_url_portions(first: str, second: str, third: str, fourth: str)
-      Returns a tuple containing the filename and the full url of the accumulated portions
+   """Returns a tuple containing the filename and the full url of the accumulated portions
 
       first/second/third/fourth: nullable strings containing url portions, e.g. "/Project/PeaWhistle/Images/top.jpg" 
       Returns (filename: str, full_path: str):
@@ -77,8 +76,7 @@ def get_url_portions(first: str, second: str, third: str, fourth: str) -> (str, 
    return (filename.strip("/"), file_path, full_path)
 
 def render_markdown_file(path:str, filename: str)->str:
-   """markdown_filelist(title:str, path:str, type:str)
-      Returns a markdown formatted page listing the contents of a directory
+   """Returns a markdown formatted page listing the contents of a directory
 
       path: string containing a path to a directory of the markdown file
       filename: string containing the filename of the markdown file
@@ -89,8 +87,7 @@ def render_markdown_file(path:str, filename: str)->str:
    return markdownToHTML.output
 
 def render_markdown_raw(path:str, content: str)->str:
-   """render_markdown_raw(path:str, content:str, type:str)
-      Returns a HTML formatted string from markdown content
+   """Returns a HTML formatted string from markdown content
 
       path: string containing a path to a directory of markdown files
       content: string containing HTML content
@@ -100,8 +97,7 @@ def render_markdown_raw(path:str, content: str)->str:
    return markdownToHTML.output
 
 def markdown_filelist(full_path:str, type:str):
-   """markdown_filelist(title:str, path:str, type:str)
-      Returns a markdown formatted page listing the contents of a directory
+   """Returns a markdown formatted page listing the contents of a directory
 
       full_path: string containing a path to a directory to list the contents of
       type: string, (either 'media' or 'markdown' or 'directory') to select what to list
