@@ -11,10 +11,17 @@ So that lead me to what seems obvious to me, to have a templating engine that ta
 
 ## Detail
 
+To build the image use:
+
+```bash
+podman build -t headstrong-site .
+```
+
 This repo has the main Python code thats using Flask as the main web engine. It uses Gunicorn as the larger engine to support a more productionised setup.
 Finally it also has a dockerfile and this creates an image that then be used in a containerised environment.
 
 The external markdown directory is bound to the container as a read-only mount point:
+
 ```bash
 podman run -p 5000:5000 -v /home/User/Folder/Markdown/:/app/markdown:ro headstrong-site
 ```
